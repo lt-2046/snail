@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+    <import resource="spring-jpa.xml"></import>
+    <context:component-scan base-package="org.liutao.snail.service,org.liutao.snail.manualt"/>
+
+    <!-- - - - - - - spring 声明式事务 - - - - - - - -->
+    <!--<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">-->
+        <!--&lt;!&ndash;<property name="dataSource" ref="dataSource" />&ndash;&gt;-->
+        <!--<property name="dataSource" ref="dataSourceProxy"/>-->
+    <!--</bean>-->
+    <!-- Jpa 事务配置 -->
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="entityManagerFactory"/>
+        <!--<property name="globalRollbackOnParticipationFailure" value="false"></property>-->
+    </bean>
+
+    <bean id="transactionTemplate" class="org.springframework.transaction.support.TransactionTemplate">
+        <property name="transactionManager" ref="transactionManager"></property>
+
+    </bean>
+    <!-- 注解方式配置事物 -->
+    <tx:annotation-driven transaction-manager="transactionManager" />
+
+    <tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="get*" propagation="SUPPORTS" read-only="true"/>
+            <tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+            <tx:method name="load*" propagation="SUPPORTS" read-only="true"/>
+            <tx:method name="*" propagation="REQUIRED"  rollback-for="java.lang.Exception" no-rollback-for="org.liutao.snail.exception.RFPGppBizException"/>
+        </tx:attributes>
+    </tx:advice>
+    <aop:config>                                            <!--org.liutao.snail.service-->
+        <!--<aop:pointcut id="targetMethod" expression="execution(* org.liutao.snail.service.*Service.*(..)) and !execution(* org.liutao.snail.service.UserNoTService.save(..))"/>-->
+        <aop:pointcut id="targetMethod" expression="execution(* org.liutao.snail.service.*Service.*(..))"/>
+        <aop:advisor advice-ref="transactionAdvice" pointcut-ref="targetMethod"/>
+    </aop:config>
+</beans>
